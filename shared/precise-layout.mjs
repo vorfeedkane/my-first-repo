@@ -14,6 +14,43 @@ function components(mask,width,height,target){
 }
 const union=items=>({left:Math.min(...items.map(x=>x.left)),right:Math.max(...items.map(x=>x.right)),top:Math.min(...items.map(x=>x.top)),bottom:Math.max(...items.map(x=>x.bottom))});
 function paddedBox(r,pad,width,height){const x=Math.max(0,r.left-pad),y=Math.max(0,r.top-pad),right=Math.min(width,r.right+pad+1),bottom=Math.min(height,r.bottom+pad+1);return [x/width,y/height,(right-x)/width,(bottom-y)/height];}
+// Running heads on vertical prose pages must not extend the text columns up
+// into the horizontal book title. Use only geometry, before OCR. Difference
+// arrays and an integer histogram keep this additional pass O(glyphs+height).
+function proseGlyphs(glyphs,width,height,vertical){
+ if(!vertical||glyphs.length<30)return glyphs;
+ const sizes=new Uint32Array(height+1),coverage=new Int32Array(height+1),mass=new Float64Array(height+1);let total=0;
+ for(const g of glyphs){sizes[g.h]++;coverage[g.top]++;coverage[g.bottom+1]--;const density=g.count/g.h;mass[g.top]+=density;mass[g.bottom+1]-=density;total+=g.count;}
+ let count=0,typical=1;for(;typical<height;typical++){count+=sizes[typical];if(count>=glyphs.length/2)break;}
+ typical=Math.max(typical,height*.006);const gap=Math.max(3,Math.ceil(typical*.8)),bands=[];let support=0,weight=0,current=null;
+ for(let y=0;y<height;y++){
+  support+=coverage[y];weight+=mass[y];if(!support)continue;
+  if(!current||y-current.end>gap){current={start:y,end:y,mass:0,left:width,right:0,glyphs:0};bands.push(current);}
+  current.end=y;current.mass+=Math.max(0,weight);
+ }
+ if(bands.length<2)return glyphs;
+ const body=bands.reduce((a,b)=>a.mass>=b.mass?a:b);
+ if(body.end-body.start<height*.5||body.mass<total*.7)return glyphs;
+ const labels=new Int16Array(height);labels.fill(-1);for(let i=0;i<bands.length;i++)labels.fill(i,bands[i].start,bands[i].end+1);
+ for(const g of glyphs){const band=bands[labels[Math.floor((g.top+g.bottom)/2)]];if(!band)continue;band.left=Math.min(band.left,g.left);band.right=Math.max(band.right,g.right);band.glyphs++;}
+ const excluded=new Set();for(let i=0;i<bands.length;i++){
+  const band=bands[i],span=band.end-band.start+1;
+  if(band===body||!(band.end<height*.07||band.start>height*.93)||span>Math.max(typical*3,height*.035)||band.mass>total*.08)continue;
+  if(band.right-band.left+1>span*1.6||band.glyphs<=3&&band.mass<total*.005)excluded.add(i);
+ }
+ return excluded.size?glyphs.filter(g=>!excluded.has(labels[Math.floor((g.top+g.bottom)/2)])):glyphs;
+}
+function proseRuns(glyphs,width,height,vertical){
+ const axis=vertical?width:height,delta=new Int32Array(axis+1),labels=new Int32Array(axis);labels.fill(-1);
+ for(const g of glyphs){delta[vertical?g.left:g.top]+=g.count;delta[(vertical?g.right:g.bottom)+1]-=g.count;}
+ const groups=[];let ink=0,current=null;for(let n=0;n<axis;n++){
+  ink+=delta[n];if(!ink){current=null;continue;}
+  if(!current){current={a:n,b:n,marks:[]};groups.push(current);}current.b=n;labels[n]=groups.length-1;
+ }
+ for(const g of glyphs)groups[labels[vertical?g.left:g.top]].marks.push(g);
+ for(const group of groups){group.u=union(group.marks);group.span=vertical?group.u.bottom-group.u.top:group.u.right-group.u.left;group.regular=group.marks.length>=6&&group.b-group.a<axis*.14&&group.span>Math.max(width,height)*.08;}
+ return {groups,labels};
+}
 // Panels precede bubbles in the reading order, so a tall right-hand panel is
 // finished before a neighbouring panel even when their bubble heights differ.
 function panelOrder(regions,ink,width,height,direction,whiteLabels){
@@ -43,9 +80,13 @@ export function detectPreciseRegions({data,width,height},direction='vertical'){
  if(!regions.length&&substantialArtwork)return [];
  // Plain pages have a single white background. Group detected glyphs into
  // narrow columns/lines rather than feeding a full illustrated page to the model.
- const usable=glyphs.filter(g=>g.left>width*.035&&g.right<width*.965&&g.top>height*.025&&g.bottom<height*.975),vertical=direction==='vertical',axis=vertical?width:height,projection=new Uint32Array(axis);
- for(const g of usable){const a=vertical?g.left:g.top,b=vertical?g.right:g.bottom;for(let n=a;n<=b;n++)projection[n]+=g.count;}
- const runs=[];for(let n=0;n<axis;){if(!projection[n]){n++;continue;}const a=n;while(n<axis&&projection[n])n++;const b=n-1;const marks=usable.filter(g=>(vertical?g.left:g.top)>=a&&(vertical?g.right:g.bottom)<=b);if(marks.length>=6&&b-a<axis*.14){const u=union(marks),span=vertical?u.bottom-u.top:u.right-u.left;if(span>unit*.08)runs.push({u,marks});}}
+ const vertical=direction==='vertical',plain=glyphs.filter(g=>g.left>width*.035&&g.right<width*.965&&g.top>height*.025&&g.bottom<height*.975),usable=proseGlyphs(plain,width,height,vertical),axis=vertical?width:height;
+ const grouped=proseRuns(usable,width,height,vertical),prior=usable.length!==plain.length?proseRuns(plain,width,height,vertical):null;
+ const bodyTop=Math.min(height,...grouped.groups.filter(group=>group.regular).map(group=>group.u.top));
+ // A short body column may previously have met the detector threshold only
+ // because the running head inflated its glyph count/height. Preserve that
+ // existing column after removing the head, without accepting new tiny noise.
+ const runs=grouped.groups.filter(group=>group.regular||vertical&&prior&&group.marks.length>=3&&group.b-group.a<axis*.14&&group.u.top<=bodyTop+unit*.055&&group.span>unit*.025&&group.span>(group.u.right-group.u.left)*1.3&&prior.groups[prior.labels[group.a]]?.regular);
  if(runs.length>=3&&runs.length<=80){const result=runs.map(({u,marks})=>({box:paddedBox(u,3,width,height),direction,kind:'line',evidence:marks.length}));return result.sort((a,b)=>vertical?b.box[0]-a.box[0]:a.box[1]-b.box[1]);}
  return regions.length?regions:[];
 }

@@ -16,17 +16,18 @@
     "models-lock.json": "327100d19d2c27c0401af95c8ae1589a52cdaa8131b7dd0cc27548827ce2f33b",
     "build-decoder.py": "689fa13af4287a6659c41fb00855e5996d1309b3c5c3243bd262a4587749e512",
     "build-precision-cache.py": "392eb13ed220317cb3f58e35f280a0fded69d7a9a6096f7e4412dbfebc9331d9",
-    "MANA_OCR_README.md": "6143060b256207dae10b3a69e1326b28a5617998db135d845a67a940303b6744",
+    "MANA_OCR_README.md": "8bb11bb58420f9b7286779f9b802e689a6a003a4256f3eb92cda72e113f173e7",
     "ARCHITECTURE.md": "a7d5a548895059da74e88f4d43694e005087ed48a943b6fce89f157a8f679a54",
     "NOTICE.md": "e7ef4c8453c148373f5f74fdc2bb2b84dde683dcf47d69cdf45e62da5786ffa0",
     "publish-image.sh": "c177d416caaed0404343d63ea8899d0d0323f5000a4ee126a6451876229f8d69",
-    "VALIDATION.json": "4e8500e143f27bc36744ebe745cd5c116472ff22ab17f9e8220f97308965f01b",
+    "VALIDATION.json": "18945df22d16bc692f0ceba7d20082de347df0c1e2cdccfba6ee5b872dfb244d",
     "models/cache/manifest.json": "49c89c91a9f0e5a5fdd2483b4d6fbc72410fb50818de27e5a4ff0f5a18eec902",
-    "shared/precise-layout.mjs": "6e34247c1d4e09433da4a8323bde79ef7975b62ca68be4ac431d8460becf2959",
+    "shared/precise-layout.mjs": "b76e0967c7ec68660f4a59617ad29211a7724176f799acc4461aa041d914a3dd",
     "shared/precision-decode.mjs": "11939795bcf5981f40d1c29d99b83f8d1876ff7df2bbd8b49301054f0d5c6a14",
     "shared/precision-pool.mjs": "85f25e113e06bd377c3b531e735cf9ba1ef916f0bbf0f4d1a21965258adcf87a",
     "licenses/LICENSE-transformers": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "licenses/LICENSE-onnxruntime": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
-    "licenses/NOTICE.md": "fa23438be78b751cac7495ed4642980ba2f0d9627a8c2c10c309935b0fababec"
+    "licenses/NOTICE.md": "fa23438be78b751cac7495ed4642980ba2f0d9627a8c2c10c309935b0fababec",
+    "tests/precision-prose-margins.mjs": "61bedb05826ef9ff7a39bd8ff566aaab3ad907be82b432127a58606b1625bbce"
   }
 }

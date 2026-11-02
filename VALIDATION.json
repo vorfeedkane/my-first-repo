@@ -1,0 +1,38 @@
+{
+  "kind": "native CPU component check, not a Runpod/cloud/GPU benchmark or accuracy acceptance",
+  "date": "2026-11-02T04:14:40.416Z",
+  "samples": [
+    {
+      "kind": "manga",
+      "regions": 10,
+      "characters": 177,
+      "singleMs": 2718,
+      "fourMs": 2251,
+      "browserSampleTextIdentical": true,
+      "differingRegions": [],
+      "singleFourTextIdentical": true
+    },
+    {
+      "kind": "novel",
+      "regions": 17,
+      "characters": 592,
+      "singleMs": 13082,
+      "fourMs": 12469,
+      "browserSampleTextIdentical": false,
+      "differingRegions": [
+        2,
+        3,
+        4
+      ],
+      "singleFourTextIdentical": true
+    }
+  ],
+  "qualityGate": {
+    "status": "blocked_pending_transcript_review",
+    "productionApproved": false,
+    "dockerBuildVerified": false,
+    "cloudVerified": false,
+    "gpuVerified": false
+  },
+  "handlerTests": "passed: actual Poppler and native OCR with isolated object-transport fixture; no user data"
+}

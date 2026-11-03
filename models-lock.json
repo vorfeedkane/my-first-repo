@@ -1,0 +1,34 @@
+{
+  "repository": "kimchireader/manga-ocr-onnx-q8",
+  "revision": "8e15f1319f1ed70b9560a39f42340dd19ee49f92",
+  "files": {
+    "config.json": {
+      "bytes": 75028,
+      "sha256": "0b45d5253cef67122d2d35b32408ccffa406a87d560e2c3b7ddec3a987863f2e"
+    },
+    "preprocessor_config.json": {
+      "bytes": 351,
+      "sha256": "445c77049d082004aa07593344d5e1f521f1198228bf586196f70ce7ae021414"
+    },
+    "tokenizer_config.json": {
+      "bytes": 1536,
+      "sha256": "89f3300b1b071e0a007da1ec0abdf540a8e016ae937139b34367334681be22ca"
+    },
+    "tokenizer.json": {
+      "bytes": 117755,
+      "sha256": "d6e7ab606c20f90d9878e82710badbe6e7b9f7a9a5e71f9da082a73c338cc557"
+    },
+    "special_tokens_map.json": {
+      "bytes": 695,
+      "sha256": "5d5b662e421ea9fac075174bb0688ee0d9431699900b90662acd44b2a350503a"
+    },
+    "generation_config.json": {
+      "bytes": 261,
+      "sha256": "faa07a187c72b147a39f660993bcbdbb85c5fc1a86f8a557d5487945285648c0"
+    },
+    "onnx/encoder_model_quantized.onnx": {
+      "bytes": 87007436,
+      "sha256": "b526dccf064fcb0bcfdb425a64c0a3b1a4f45c4b9961eb1dc0f14e143b8c4b2d"
+    }
+  }
+}

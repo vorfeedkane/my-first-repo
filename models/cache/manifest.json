@@ -1,0 +1,42 @@
+{
+  "format": 1,
+  "directory": "decoder-cache.84b923b986de70d7",
+  "source": {
+    "repository": "kimchireader/manga-ocr-onnx-q8",
+    "revision": "8e15f1319f1ed70b9560a39f42340dd19ee49f92",
+    "decoderSHA256": "31fabafa8ced08010d8c4851880afe1d8c062284606ea8ef3eb779637f022dd9"
+  },
+  "files": {
+    "vision_cache_quantized.onnx": {
+      "bytes": 2385439,
+      "sha256": "3c9096359b58d814c6fe153116f1cb495143de6288dae470ed72b396ecad0186"
+    },
+    "decoder_quantized.onnx_data": {
+      "bytes": 16464384,
+      "sha256": "53f9b783148f2fe6f458cde26187d997856d7aa1af0c38fe32f4cba940de7be4"
+    },
+    "decoder_quantized.onnx_data_1": {
+      "bytes": 10616832,
+      "sha256": "0cca8b75b595628328b42effb8618bf38d22b1c8e02d56c0d455c487cdcc7d54"
+    },
+    "decoder_quantized.onnx": {
+      "bytes": 201303,
+      "sha256": "1da6da686542fca08f1b499e14ebc7e2cbc397202ec4807decde95198d3dd43e"
+    }
+  },
+  "cacheNames": [
+    "vision_0",
+    "vision_1",
+    "vision_2",
+    "vision_3",
+    "vision_4",
+    "vision_5",
+    "vision_6"
+  ],
+  "decoderExternalDataChunks": 2,
+  "nodes": {
+    "original": 615,
+    "cache": 47,
+    "decoder": 568
+  }
+}

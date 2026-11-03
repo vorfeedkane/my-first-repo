@@ -1,0 +1,78 @@
+{
+  "kind": "native CPU component check, not a Runpod/cloud/GPU benchmark or accuracy acceptance",
+  "date": "2026-11-02T04:14:40.416Z",
+  "samples": [
+    {
+      "kind": "manga",
+      "regions": 10,
+      "characters": 177,
+      "singleMs": 2718,
+      "fourMs": 2251,
+      "browserSampleTextIdentical": true,
+      "differingRegions": [],
+      "singleFourTextIdentical": true
+    },
+    {
+      "kind": "novel",
+      "regions": 17,
+      "characters": 592,
+      "singleMs": 13082,
+      "fourMs": 12469,
+      "browserSampleTextIdentical": false,
+      "differingRegions": [
+        2,
+        3,
+        4
+      ],
+      "singleFourTextIdentical": true
+    }
+  ],
+  "qualityGate": {
+    "status": "prose_margins_checked_awaiting_revised_cloud_run",
+    "productionApproved": false,
+    "dockerBuildVerified": false,
+    "cloudVerified": false,
+    "gpuVerified": false,
+    "revisedMarginFixCloudVerified": false
+  },
+  "handlerTests": "passed: actual Poppler and native OCR with isolated object-transport fixture; no user data",
+  "proseMarginFix": {
+    "date": "2026-11-02T08:55:54.977Z",
+    "scope": "Development preview; geometric layout fix and local native CPU checks",
+    "layout": {
+      "pages": 40,
+      "mangaPages": 20,
+      "mangaRegionsUnchanged": true,
+      "novelPages": 20,
+      "novelPagesWithMarginsRemoved": 16,
+      "allExistingColumnCountsPreserved": true,
+      "shortColumnCaseVisuallyReviewed": true
+    },
+    "singlePage": {
+      "basis": "AI visual transcription of the supplied scan; not an independent human benchmark",
+      "normalization": "Unicode NFKC, remove whitespace; running header and page number excluded",
+      "referenceCharacters": 652,
+      "characterEditsBefore": 18,
+      "characterEditsAfter": 4,
+      "remainingEditsRequireReview": true
+    },
+    "native": {
+      "singleFourTextIdentical": true,
+      "mangaBrowserSampleTextIdentical": true,
+      "sharedWeightsUnchanged": true
+    },
+    "complexity": {
+      "plainProseGrouping": "O(G + W + H) time; O(G + W + H) additional space",
+      "G": "glyph components",
+      "W": "detector image width",
+      "H": "detector image height",
+      "scope": "Prose grouping/margin stage only; not whole OCR or panel detection"
+    },
+    "cloud": {
+      "previousRevisionSinglePageRunVerifiedByUser": true,
+      "previousExecutionMs": 8470,
+      "revisedMarginFixVerified": false
+    },
+    "productionApproved": false
+  }
+}

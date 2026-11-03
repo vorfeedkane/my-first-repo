@@ -1,0 +1,43 @@
+# Mana 云端精细 OCR — 开发测试分支
+
+## 小说页眉修复（2026-11-02）
+
+竖排小说的横排页眉原先会扩进正文列，造成杂字和错误裁切。现在先用几何证据排除边缘页眉/页码，并保留原先受页眉影响的短正文列。分组改为投影差分与一次归类，新增处理为 O(G + W + H)，不会增加识别路数或模型调用。完整 OCR 与漫画分镜检测不承诺同一复杂度。
+
+40 页版面检查中，20 页漫画区域完全不变；20 页小说正文列数量均保留，16 页的页眉混入得到修正。所报单页在对照转写后的字符编辑差异为 18 → 4（652 个规范化正文字符）；这是 AI 对照原图转写的单页检查，不代表所有书籍的准确率。剩余字符错误仍待人工核对。
+
+此修订尚待 Runpod 重新构建和云端单页复测。网站异步后台接口尚未接入，继续保持 CPU 测试候选状态。可单独运行几何回归测试：
+
+```sh
+node tests/precision-prose-margins.mjs
+```
+
+
+仅用于 https://mana-learning.site 的独立 OCR 计算节点；尚未部署到正式站。
+
+## 当前状态
+
+- 已通过漫画、小说的单路/四路实际 CPU 推理与并行一致性测试。
+- 漫画样本文字与网页一致；小说 3 个区域仍有跨运行环境差异，需要对照原图验收。
+- GPU 性能、真实 Docker 镜像构建和 Runpod 端到端执行尚未验证。当前不可用于正式任务。
+- Dockerfile 是 CPU 版本。不要把它部署到按 GPU 收费的节点来测试 GPU 性能。
+- VALIDATION.json 记录验收范围与阻止正式上线的状态，未声称 99% 准确率。
+
+## 下一步：连接 Runpod 与 GitHub
+
+在 Runpod Settings → Connections → GitHub 连接账号，只授权这个仓库。
+回到 Serverless → Deploy from a GitHub repository，选择该仓库和 mana-ocr-preview 分支。
+Dockerfile Path 为 Dockerfile，Endpoint Type 为 Queue。
+先停在资源配置页，不创建收费实例；CPU/GPU 配置与质量验收完成后再继续。
+
+Runpod 可以从这个分支构建镜像，不需要在 Mac 安装 Docker。
+模型是公开的固定版本权重，构建期间按 models-lock.json 校验下载；
+图像缓存解码器由源码生成，输出四个文件的 SHA-256 必须与已验收版本完全一致。
+原件、OCR 文字、密码和密钥均不在这个代码仓库中。节点只接受短时签名的原件读取任务。
+
+## 后续运行配置
+
+MANA_R2_ACCOUNT：自己的 Cloudflare account ID（账号标识，不是 API 密钥）。
+MANA_OCR_WORKERS=4；MANA_OCR_DEVICE=cpu。Active workers=0，Max workers=1。
+
+模型与调度协议说明见 ARCHITECTURE.md。

@@ -7,10 +7,10 @@
     "requirements.txt": "ed78fa9d0635dcb669ea762752710e79b82d8d7b8d3223ac0bbfe63d598395e4",
     "requirements-build.txt": "2a98a54172e875559ad59ef3ce543acbccbca79aa4c1fcf97f4ed8b4e12d6cfa",
     "Dockerfile": "afcddab67195e6d7cccb385873052ee5e5fe36b360d91c5ac356627054b0d5bf",
-    ".dockerignore": "35ddd5b018358d93dfcaefbfddae8909b22000dcd5c0de5500362392f6e1d96d",
+    ".dockerignore": "d6ee616329335a26a64d72dc0dc75bf3555bbb4c4f8823d93a6137857f43cf0f",
     "handler.py": "2a0c5db0280096146f49f37859ff94229d21d4af7e45300423ed33e50a8b79bc",
     "model.mjs": "c2a31198f171cece8dae69e740e251ab29655e4d5a8ca495dee3c9d183df311e",
-    "engine.mjs": "eb290fdee26b8ae16d2279d281d2b796ad538e5458fc6b952aeba971b6bcce8d",
+    "engine.mjs": "c7f84fdaea0456ac68e7acde96548a1f08013c362f3ce258fdc1fe0a52b5473e",
     "runner.mjs": "67f607c31e3eab542f4988fea8b3bea94a3a09181a9ba3e8a378fe8f8b753587",
     "fetch-models.py": "a3bbc2208d8323bd3bc508f5599942c456b0668a51b3524372008f9afbd813f5",
     "models-lock.json": "327100d19d2c27c0401af95c8ae1589a52cdaa8131b7dd0cc27548827ce2f33b",
@@ -22,12 +22,14 @@
     "publish-image.sh": "c177d416caaed0404343d63ea8899d0d0323f5000a4ee126a6451876229f8d69",
     "VALIDATION.json": "18945df22d16bc692f0ceba7d20082de347df0c1e2cdccfba6ee5b872dfb244d",
     "models/cache/manifest.json": "49c89c91a9f0e5a5fdd2483b4d6fbc72410fb50818de27e5a4ff0f5a18eec902",
-    "shared/precise-layout.mjs": "b76e0967c7ec68660f4a59617ad29211a7724176f799acc4461aa041d914a3dd",
+    "shared/precise-layout.mjs": "2e2028de7c7c2cf2640782247fd4e1d7be9cda41aee631af1d750c376318cb9a",
     "shared/precision-decode.mjs": "11939795bcf5981f40d1c29d99b83f8d1876ff7df2bbd8b49301054f0d5c6a14",
     "shared/precision-pool.mjs": "85f25e113e06bd377c3b531e735cf9ba1ef916f0bbf0f4d1a21965258adcf87a",
     "licenses/LICENSE-transformers": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "licenses/LICENSE-onnxruntime": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
     "licenses/NOTICE.md": "fa23438be78b751cac7495ed4642980ba2f0d9627a8c2c10c309935b0fababec",
-    "tests/precision-prose-margins.mjs": "61bedb05826ef9ff7a39bd8ff566aaab3ad907be82b432127a58606b1625bbce"
+    "tests/precision-prose-margins.mjs": "61bedb05826ef9ff7a39bd8ff566aaab3ad907be82b432127a58606b1625bbce",
+    "shared/precision-crop.mjs": "8aac13316fe20ba4fe59eae69f41e7c7c759830642e6af6edd3f2da9a8e98f85",
+    "OCR_REVIEW.md": "00c39037488beb3d894fb5a56a7870498ad05a361d7be574523b57b547bfaf61"
   }
 }

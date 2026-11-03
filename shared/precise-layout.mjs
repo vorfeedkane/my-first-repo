@@ -69,8 +69,12 @@ export function detectPreciseRegions({data,width,height},direction='vertical'){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width*height>2200000||data.length!==width*height*4)throw Error('文字检测图像尺寸无效。');
  const white=new Uint8Array(width*height),ink=new Uint8Array(width*height);for(let i=0;i<white.length;i++){const value=data[i*4]*.299+data[i*4+1]*.587+data[i*4+2]*.114;white[i]=value>190?1:0;ink[i]=value<145?1:0;}
  const whites=components(white,width,height,1),dark=components(ink,width,height,1).items,unit=Math.max(width,height),glyphs=dark.filter(c=>c.count>=2&&c.count<unit*unit*.0018&&c.w<width*.085&&c.h<height*.07&&c.w>=2&&c.h>=2),regions=[];
+ // Index glyphs by their adjacent white component once: O(G), instead of
+ // filtering all glyphs for every white component (formerly O(W * G)).
+ const marksByWhite=new Map();
+ for(const g of glyphs){const x=Math.floor((g.left+g.right)/2),above=whites.labels[Math.max(0,g.top-1)*width+x],below=whites.labels[Math.min(height-1,g.bottom+1)*width+x];for(const id of above===below?[above]:[above,below])if(id){if(!marksByWhite.has(id))marksByWhite.set(id,[]);marksByWhite.get(id).push(g);}}
  for(const c of whites.items){if(c.border||c.count/(c.w*c.h)<.5||c.count<width*height*.001||c.count>width*height*.22||c.w<8||c.h<14||c.w>width*.6||c.h>height*.6)continue;
-  const marks=glyphs.filter(g=>g.left>c.left+1&&g.right<c.right-1&&g.top>c.top+1&&g.bottom<c.bottom-1&&(whites.labels[Math.max(0,g.top-1)*width+Math.floor((g.left+g.right)/2)]===c.id||whites.labels[Math.min(height-1,g.bottom+1)*width+Math.floor((g.left+g.right)/2)]===c.id));
+  const marks=(marksByWhite.get(c.id)||[]).filter(g=>g.left>c.left+1&&g.right<c.right-1&&g.top>c.top+1&&g.bottom<c.bottom-1&&(whites.labels[Math.max(0,g.top-1)*width+Math.floor((g.left+g.right)/2)]===c.id||whites.labels[Math.min(height-1,g.bottom+1)*width+Math.floor((g.left+g.right)/2)]===c.id));
   if(!marks.some(g=>g.w>=unit*.004&&g.h>=unit*.005&&g.count>=unit*.012)||marks.length<5||marks.filter(g=>g.h/g.w<5&&g.w/g.h<7).length<5)continue;const box=union(marks);if(marks.length<10&&(box.bottom-box.top)<(box.right-box.left)*1.2)continue;const area=(box.right-box.left+1)*(box.bottom-box.top+1),density=marks.reduce((n,g)=>n+g.count,0)/Math.max(1,area);if(density<.045||density>.7||area<100)continue;
   regions.push({box:paddedBox(box,Math.max(3,Math.round(unit*.004)),width,height),direction,kind:'bubble',evidence:marks.length});
  }

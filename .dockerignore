@@ -25,6 +25,7 @@
 !shared/precise-layout.mjs
 !shared/precision-decode.mjs
 !shared/precision-pool.mjs
+!shared/precision-crop.mjs
 !licenses/
 !licenses/LICENSE-transformers
 !licenses/LICENSE-onnxruntime

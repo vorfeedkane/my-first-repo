@@ -1,3 +1,4 @@
+import {boxIndex} from './precision-geometry.mjs';
 // Bounded image analysis only. No recognizer guesses are used as detector evidence.
 export const PRECISE_OCR_ENGINE='manga-ocr-q8';
 function components(mask,width,height,target){
@@ -65,6 +66,61 @@ function panelOrder(regions,ink,width,height,direction,whiteLabels){
  }
  return regions.sort((a,b)=>a.band-b.band||(direction==='vertical'?b.panel-a.panel:a.panel-b.panel)||((Math.abs(a.box[1]-b.box[1])<Math.min(a.box[3],b.box[3])*.45)?direction==='vertical'?b.box[0]-a.box[0]:a.box[0]-b.box[0]:a.box[1]-b.box[1])).map(({band,panel,...r})=>r);
 }
+// Recover aligned glyph runs even when bubble outlines leak into the page
+// background. A fixed grid bounds neighbour searches (at most 64 per glyph);
+// sparse/noisy cells are rejected, never expanded into quadratic comparisons.
+function recoverRuns(glyphs,regions,white,width,height,direction){
+ const vertical=direction==='vertical',unit=Math.max(width,height),cell=Math.max(8,Math.ceil(unit*.025)),index=boxIndex(regions.map(r=>r.box)),candidates=[];
+ const marks=glyphs.filter(g=>g.w>=2&&g.h>=2&&g.w<=unit*.045&&g.h<=unit*.045&&g.count>=unit*.008&&!index.covered(paddedBox(g,0,width,height)));
+ // Summed areas turn every whitespace/ruby/merge check into O(1), instead
+ // of repeatedly walking overlapping windows of the image.
+ const stride=width+1,areas=new Uint32Array(stride*(height+1));
+ for(let y=0;y<height;y++){let row=0;for(let x=0;x<width;x++){row+=white[y*width+x];areas[(y+1)*stride+x+1]=areas[y*stride+x+1]+row;}}
+ const rectangle=(l,t,r,b)=>{l=Math.max(0,Math.floor(l));t=Math.max(0,Math.floor(t));r=Math.min(width,Math.ceil(r));b=Math.min(height,Math.ceil(b));return {clean:areas[b*stride+r]-areas[t*stride+r]-areas[b*stride+l]+areas[t*stride+l],total:(r-l)*(b-t)};};
+ const parent=marks.map((_,i)=>i),sizes=marks.map(()=>1),grid=new Map();const root=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
+ const join=(i,j)=>{i=root(i);j=root(j);if(i===j)return;if(sizes[i]<sizes[j])[i,j]=[j,i];parent[j]=i;sizes[i]+=sizes[j];};
+ for(let i=0;i<marks.length;i++){const g=marks[i],cx=(g.left+g.right)/2,cy=(g.top+g.bottom)/2,gx=Math.floor(cx/cell),gy=Math.floor(cy/cell);let checked=0;
+  neighbours: for(let y=gy-2;y<=gy+2;y++)for(let x=gx-2;x<=gx+2;x++)for(const j of grid.get(x+','+y)||[]){
+   if(++checked>64)break neighbours;const b=marks[j],cross=vertical?Math.min(g.right,b.right)-Math.max(g.left,b.left)+1:Math.min(g.bottom,b.bottom)-Math.max(g.top,b.top)+1;
+   const short=vertical?Math.min(g.w,b.w):Math.min(g.h,b.h),long=vertical?Math.max(g.h,b.h):Math.max(g.w,b.w),gap=vertical?Math.max(g.top,b.top)-Math.min(g.bottom,b.bottom)-1:Math.max(g.left,b.left)-Math.min(g.right,b.right)-1;
+   if(cross>=short*.55&&gap<=long*1.15&&gap>=-long*.4&&Math.max(g.w*g.h,b.w*b.h)/Math.min(g.w*g.h,b.w*b.h)<12)join(i,j);
+  }
+  const key=gx+','+gy;if(!grid.has(key))grid.set(key,[]);if(grid.get(key).length<64)grid.get(key).push(i);
+ }
+ const groups=new Map();for(let i=0;i<marks.length;i++){const id=root(i);if(!groups.has(id))groups.set(id,[]);groups.get(id).push(marks[i]);}
+ for(const group of groups.values()){
+  if(group.length<3||group.filter(g=>g.w>=unit*.006&&g.h>=unit*.009&&g.count>=unit*.025).length<2)continue;const b=union(group),w=b.right-b.left+1,h=b.bottom-b.top+1,cross=vertical?w:h,span=vertical?h:w;
+  if(span<cross*1.9||span>unit*.5||cross>unit*.065)continue;
+  const density=group.reduce((n,g)=>n+g.count,0)/(w*h);if(density<.09||density>.6)continue;
+  // Check clean whitespace, allowing one alternative with room for furigana
+  // on the right of a vertical column / above a horizontal line. Always keep
+  // the tight original when it passes so adjacent columns are not pulled in.
+  const ruby=vertical?{...b,right:Math.min(width-1,b.right+Math.ceil(cross*.65))}:{...b,top:Math.max(0,b.top-Math.ceil(cross*.65))};
+  const pad=Math.max(3,Math.round(cross*.3));let acceptedBox=null,cleanRatio=0;
+  for(const bounds of [b,ruby]){
+   const outer=rectangle(bounds.left-pad,bounds.top-pad,bounds.right+pad+1,bounds.bottom+pad+1),inner=rectangle(bounds.left,bounds.top,bounds.right+1,bounds.bottom+1),clean=outer.clean-inner.clean,total=outer.total-inner.total;
+   if(total&&clean/total>=.88){acceptedBox=bounds;cleanRatio=clean/total;break;}
+  }
+  if(!acceptedBox)continue;
+  const box=paddedBox(acceptedBox,Math.max(3,Math.round(unit*.004)),width,height);if(index.covered(box))continue;
+  candidates.push({box,direction,kind:'text-run',evidence:group.length,recovered:true,score:group.length*cleanRatio});
+ }
+ candidates.sort((a,b)=>b.score-a.score);
+ // At most 12 recovery seeds: join adjacent aligned columns through clean
+ // whitespace, keeping ruby with its parent text instead of separate OCR.
+ const seeds=candidates.slice(0,12);
+ let merged=true;for(let pass=0;pass<12&&merged;pass++){merged=false;
+ for(let i=0;i<seeds.length;i++)for(let j=i+1;j<seeds.length;j++){
+  const a=seeds[i],b=seeds[j];if(!a||!b)continue;const [x,y,w,h]=a.box,[bx,by,bw,bh]=b.box;
+  const overlap=vertical?Math.min(y+h,by+bh)-Math.max(y,by):Math.min(x+w,bx+bw)-Math.max(x,bx);
+  const gap=vertical?Math.max(x,bx)-Math.min(x+w,bx+bw):Math.max(y,by)-Math.min(y+h,by+bh);
+  if(overlap<Math.min(vertical?h:w,vertical?bh:bw)*.35||gap>Math.max(vertical?w:h,vertical?bw:bh)*1.5)continue;
+  const left=Math.min(x,bx),top=Math.min(y,by),right=Math.max(x+w,bx+bw),bottom=Math.max(y+h,by+bh),{clean,total}=rectangle(left*width,top*height,right*width,bottom*height);
+  if(clean/total<.65)continue;a.box=[left,top,right-left,bottom-top];a.evidence+=b.evidence;seeds[j]=null;merged=true;
+ }}
+ const accepted=[];
+ for(const seed of seeds){if(!seed)continue;const {score,...r}=seed;if(accepted.length===12)break;if(index.covered(r.box))continue;accepted.push(r);index.add(r.box);}return accepted;
+}
 export function detectPreciseRegions({data,width,height},direction='vertical'){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width*height>2200000||data.length!==width*height*4)throw Error('文字检测图像尺寸无效。');
  const white=new Uint8Array(width*height),ink=new Uint8Array(width*height);for(let i=0;i<white.length;i++){const value=data[i*4]*.299+data[i*4+1]*.587+data[i*4+2]*.114;white[i]=value>190?1:0;ink[i]=value<145?1:0;}
@@ -75,13 +131,17 @@ export function detectPreciseRegions({data,width,height},direction='vertical'){
  for(const g of glyphs){const x=Math.floor((g.left+g.right)/2),above=whites.labels[Math.max(0,g.top-1)*width+x],below=whites.labels[Math.min(height-1,g.bottom+1)*width+x];for(const id of above===below?[above]:[above,below])if(id){if(!marksByWhite.has(id))marksByWhite.set(id,[]);marksByWhite.get(id).push(g);}}
  for(const c of whites.items){if(c.border||c.count/(c.w*c.h)<.5||c.count<width*height*.001||c.count>width*height*.22||c.w<8||c.h<14||c.w>width*.6||c.h>height*.6)continue;
   const marks=(marksByWhite.get(c.id)||[]).filter(g=>g.left>c.left+1&&g.right<c.right-1&&g.top>c.top+1&&g.bottom<c.bottom-1&&(whites.labels[Math.max(0,g.top-1)*width+Math.floor((g.left+g.right)/2)]===c.id||whites.labels[Math.min(height-1,g.bottom+1)*width+Math.floor((g.left+g.right)/2)]===c.id));
-  if(!marks.some(g=>g.w>=unit*.004&&g.h>=unit*.005&&g.count>=unit*.012)||marks.length<5||marks.filter(g=>g.h/g.w<5&&g.w/g.h<7).length<5)continue;const box=union(marks);if(marks.length<10&&(box.bottom-box.top)<(box.right-box.left)*1.2)continue;const area=(box.right-box.left+1)*(box.bottom-box.top+1),density=marks.reduce((n,g)=>n+g.count,0)/Math.max(1,area);if(density<.045||density>.7||area<100)continue;
+  const shortText=marks.length>=3&&marks.filter(g=>g.w>=unit*.006&&g.h>=unit*.009&&g.count>=unit*.025).length>=2;
+  if(!marks.some(g=>g.w>=unit*.004&&g.h>=unit*.005&&g.count>=unit*.012)||(!shortText&&(marks.length<5||marks.filter(g=>g.h/g.w<5&&g.w/g.h<7).length<5)))continue;const box=union(marks);if(marks.length<10&&(direction==='vertical'?(box.bottom-box.top)<(box.right-box.left)*1.2:(box.right-box.left)<(box.bottom-box.top)*1.2))continue;const area=(box.right-box.left+1)*(box.bottom-box.top+1),density=marks.reduce((n,g)=>n+g.count,0)/Math.max(1,area);if(density<.045||density>.7||area<100)continue;
   regions.push({box:paddedBox(box,Math.max(3,Math.round(unit*.004)),width,height),direction,kind:'bubble',evidence:marks.length});
  }
  if(regions.length>64)throw Error('本页文字区域超过64个，请分区精细识别。');
  const substantialArtwork=dark.some(c=>c.count>width*height*.06);
- if(regions.length>=2||regions.length===1&&substantialArtwork)return panelOrder(regions,ink,width,height,direction,whites.labels);
- if(!regions.length&&substantialArtwork)return [];
+ if(substantialArtwork||regions.length>=2){
+  regions.push(...recoverRuns(glyphs,regions,white,width,height,direction));
+  if(regions.length>64)throw Error('本页文字区域超过64个，请分区精细识别。');
+  return regions.length?panelOrder(regions,ink,width,height,direction,whites.labels):[];
+ }
  // Plain pages have a single white background. Group detected glyphs into
  // narrow columns/lines rather than feeding a full illustrated page to the model.
  const vertical=direction==='vertical',plain=glyphs.filter(g=>g.left>width*.035&&g.right<width*.965&&g.top>height*.025&&g.bottom<height*.975),usable=proseGlyphs(plain,width,height,vertical),axis=vertical?width:height;

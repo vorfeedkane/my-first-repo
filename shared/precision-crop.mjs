@@ -53,9 +53,19 @@ export async function recognizeCropPixels({rgba,width,height,direction='vertical
   const result=await decode(cropRGB(rgba,width,plan.parts[i],{review,low:plan.low,high:plan.high}));check();
   text+=result.text||'';truncated ||= !result.ended;
  }
+ return cropResult(plan,text,truncated);
+}
+function cropResult(plan,text,truncated){
  const reasons=[...plan.reasons];if(truncated)reasons.push('truncated');if(!text.trim())reasons.push('empty');if(text.includes('\uFFFD'))reasons.push('unknown-character');
  if(/([\p{L}\p{N}])\1{5,}/u.test(text))reasons.push('repetition');
  return {text:text.trim(),truncated,parts:plan.parts.length,reasons};
+}
+// A completed probe is reusable only for an identical full crop, without
+// rotation/padding/review or segmentation. Callers enforce full-box identity.
+export function reuseProbeCrop({rgba,width,height,direction,result}){
+ if(!result?.ended||result.pruned)return null;
+ const plan=cropPlan(rgba,width,height,direction,false);
+ return plan.parts.length===1?cropResult(plan,result.text||'',false):null;
 }
 // One extra pass for at most a quarter of a page, capped at four regions.
 // Selection happens AFTER the normal pass, in stable page order, not race order.
